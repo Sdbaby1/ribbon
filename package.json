@@ -1,0 +1,34 @@
+{
+  "name": "ribbon",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Shared USDC tabs settled in one transaction on Arc.",
+  "workspaces": [
+    "web",
+    "server"
+  ],
+  "scripts": {
+    "export-abi": "hardhat compile && tsx scripts/export-abi.ts",
+    "test": "npm run export-abi && hardhat test && npm run test -w server && npm run test -w web",
+    "build": "npm run export-abi && npm run build -w server && npm run build -w web",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "start": "npm run start -w server",
+    "deploy:arc": "hardhat run scripts/deploy.ts --network arc",
+    "deploy:arc-testnet": "hardhat run scripts/deploy.ts --network arcTestnet"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.7.0",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.2.3",
+    "hardhat": "^2.26.3",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
