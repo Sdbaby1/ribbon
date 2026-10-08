@@ -63,6 +63,9 @@ export function explainError(error: unknown): string {
     if (/unknown rpc error/i.test(details)) {
       return "The wallet could not submit the transaction to Arc. Check that its Arc network uses https://rpc.mainnet.arc.io, then try again.";
     }
+    if (/http request failed|failed to fetch|network request failed/i.test(details)) {
+      return "Your wallet cannot reach Arc. In the wallet's Arc network settings, use chain ID 5042 and RPC URL https://rpc.mainnet.arc.io, then reconnect and try again.";
+    }
     return error.shortMessage || "The transaction failed.";
   }
   if (error instanceof Error) {
@@ -77,6 +80,9 @@ export function explainError(error: unknown): string {
     }
     if (/unknown rpc error/i.test(error.message)) {
       return "The wallet could not submit the transaction to Arc. Check that its Arc network uses https://rpc.mainnet.arc.io, then try again.";
+    }
+    if (/http request failed|failed to fetch|network request failed/i.test(error.message)) {
+      return "Your wallet cannot reach Arc. In the wallet's Arc network settings, use chain ID 5042 and RPC URL https://rpc.mainnet.arc.io, then reconnect and try again.";
     }
     return error.message;
   }

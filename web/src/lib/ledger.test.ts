@@ -61,4 +61,8 @@ describe("revert copy", () => {
   it("turns a wallet rejection into a sentence", () => {
     expect(explainError(new Error("user rejected the request"))).toMatch(/wallet closed/i);
   });
+
+  it("turns wallet HTTP failures into Arc network instructions", () => {
+    expect(explainError(new Error("HTTP request failed."))).toContain("https://rpc.mainnet.arc.io");
+  });
 });
