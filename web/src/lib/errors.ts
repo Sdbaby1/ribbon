@@ -50,14 +50,33 @@ export function explainError(error: unknown): string {
       const explained = explainRevert(reverted.data?.errorName, reverted.data?.args);
       if (explained) return explained;
     }
-    if (/user rejected|request denied|UserRejected/i.test(`${error.shortMessage} ${error.message}`)) {
+    const details = `${error.shortMessage} ${error.details ?? ""} ${error.message}`;
+    if (/user rejected|request denied|UserRejected/i.test(details)) {
       return "The wallet closed the request before it was signed.";
+    }
+    if (/insufficient funds|exceeds.*balance|not enough.*gas/i.test(details)) {
+      return "This wallet does not have enough USDC on Arc to pay the transaction fee.";
+    }
+    if (/transaction underpriced|max fee per gas|fee cap/i.test(details)) {
+      return "The wallet proposed a gas fee below Arc's current minimum. Try the transaction again.";
+    }
+    if (/unknown rpc error/i.test(details)) {
+      return "The wallet could not submit the transaction to Arc. Check that its Arc network uses https://rpc.mainnet.arc.io, then try again.";
     }
     return error.shortMessage || "The transaction failed.";
   }
   if (error instanceof Error) {
     if (/user rejected|request denied/i.test(error.message)) {
       return "The wallet closed the request before it was signed.";
+    }
+    if (/insufficient funds|exceeds.*balance|not enough.*gas/i.test(error.message)) {
+      return "This wallet does not have enough USDC on Arc to pay the transaction fee.";
+    }
+    if (/transaction underpriced|max fee per gas|fee cap/i.test(error.message)) {
+      return "The wallet proposed a gas fee below Arc's current minimum. Try the transaction again.";
+    }
+    if (/unknown rpc error/i.test(error.message)) {
+      return "The wallet could not submit the transaction to Arc. Check that its Arc network uses https://rpc.mainnet.arc.io, then try again.";
     }
     return error.message;
   }

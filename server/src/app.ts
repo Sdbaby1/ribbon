@@ -24,6 +24,8 @@ export type RibbonAppOptions = {
   now?: () => number;
   origins?: string[];
   staticRoot?: string;
+  rpcUrl?: string;
+  rpcFetch?: typeof fetch;
 };
 
 type ProfileBody = {
@@ -32,6 +34,31 @@ type ProfileBody = {
   issuedAt?: unknown;
   signature?: unknown;
 };
+
+type RpcBody = {
+  jsonrpc?: unknown;
+  id?: unknown;
+  method?: unknown;
+  params?: unknown;
+};
+
+const RPC_METHODS = new Set([
+  "eth_blockNumber",
+  "eth_call",
+  "eth_chainId",
+  "eth_estimateGas",
+  "eth_feeHistory",
+  "eth_gasPrice",
+  "eth_getBalance",
+  "eth_getBlockByHash",
+  "eth_getBlockByNumber",
+  "eth_getCode",
+  "eth_getLogs",
+  "eth_getTransactionByHash",
+  "eth_getTransactionCount",
+  "eth_getTransactionReceipt",
+  "eth_maxPriorityFeePerGas",
+]);
 
 async function readStatic(root: string, requestPath: string): Promise<{ body: Buffer; type: string } | null> {
   let decoded = requestPath;
@@ -68,6 +95,8 @@ export function createApp(options: RibbonAppOptions) {
   const now = options.now ?? (() => Date.now());
   const origins = options.origins?.length ? options.origins : ["http://localhost:5173"];
   const app = new Hono();
+  const rpcUrl = options.rpcUrl ?? "https://rpc.mainnet.arc.io";
+  const rpcFetch = options.rpcFetch ?? fetch;
 
   app.use(
     "/api/*",
@@ -85,6 +114,42 @@ export function createApp(options: RibbonAppOptions) {
       chainId: 5042,
       store: options.store.kind,
     });
+  });
+
+  app.post("/api/rpc", async (c) => {
+    const contentLength = Number(c.req.header("content-length") || "0");
+    if (contentLength > 100_000) return c.json({ ok: false, error: "RPC request is too large." }, 413);
+
+    let body: RpcBody;
+    try {
+      body = (await c.req.json()) as RpcBody;
+    } catch {
+      return c.json({ ok: false, error: "Send one JSON-RPC request." }, 400);
+    }
+    if (
+      body.jsonrpc !== "2.0" ||
+      typeof body.method !== "string" ||
+      !RPC_METHODS.has(body.method) ||
+      !Array.isArray(body.params)
+    ) {
+      return c.json({ ok: false, error: "That RPC method is not available through Ribbon." }, 400);
+    }
+
+    try {
+      const upstream = await rpcFetch(rpcUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const responseBody = await upstream.text();
+      if (!upstream.ok) return c.json({ ok: false, error: "Arc RPC did not accept the request." }, 502);
+      return new Response(responseBody, {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    } catch {
+      return c.json({ ok: false, error: "Arc RPC did not respond." }, 502);
+    }
   });
 
   app.get("/api/profiles", async (c) => {

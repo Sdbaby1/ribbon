@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { formatEther, parseGwei } from "viem";
 import { ribbonAbi } from "../abi/Ribbon";
 import { arc } from "../chain";
 import { ribbonAddress } from "../config";
@@ -11,6 +12,8 @@ import { formatInvite, parseInvite, randomSalt } from "../lib/invite";
 import { inviteFromReceipt, loadSummaries } from "../lib/loadCircle";
 import { rememberCircle, readSeenCircles, saveInvite } from "../lib/storage";
 import { utf8Size } from "../lib/usdc";
+
+const MIN_ARC_MAX_FEE = parseGwei("21");
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -58,11 +61,45 @@ export function HomePage() {
     setPending(true);
     setError(null);
     try {
+      const args = [trimmed, randomSalt()] as const;
+      const [balance, estimatedGas, estimatedFees] = await Promise.all([
+        client.getBalance({ address: address! }),
+        client.estimateContractGas({
+          address: ribbonAddress,
+          abi: ribbonAbi,
+          functionName: "createCircle",
+          args,
+          account: address!,
+        }),
+        client.estimateFeesPerGas(),
+      ]);
+      const maxFeePerGas = estimatedFees.maxFeePerGas > MIN_ARC_MAX_FEE ? estimatedFees.maxFeePerGas : MIN_ARC_MAX_FEE;
+      const gas = estimatedGas + estimatedGas / 5n;
+      const maximumGasCost = gas * maxFeePerGas;
+      if (balance < maximumGasCost) {
+        throw new Error(
+          `This wallet needs about ${formatGasUsdc(maximumGasCost)} USDC on Arc for gas. Its Arc balance is ${formatGasUsdc(balance)} USDC.`,
+        );
+      }
+      await client.simulateContract({
+        address: ribbonAddress,
+        abi: ribbonAbi,
+        functionName: "createCircle",
+        args,
+        account: address!,
+        gas,
+        maxFeePerGas,
+        maxPriorityFeePerGas: estimatedFees.maxPriorityFeePerGas,
+      });
       const hash = await writeContractAsync({
         address: ribbonAddress,
         abi: ribbonAbi,
         functionName: "createCircle",
-        args: [trimmed, randomSalt()],
+        args,
+        chainId: arc.id,
+        gas,
+        maxFeePerGas,
+        maxPriorityFeePerGas: estimatedFees.maxPriorityFeePerGas,
       });
       const receipt = await client.waitForTransactionReceipt({ hash });
       const created = inviteFromReceipt(receipt);
@@ -222,4 +259,10 @@ export function HomePage() {
       )}
     </>
   );
+}
+
+function formatGasUsdc(value: bigint): string {
+  const [whole, fraction = ""] = formatEther(value).split(".");
+  const trimmed = fraction.slice(0, 6).replace(/0+$/, "");
+  return trimmed ? `${whole}.${trimmed}` : whole;
 }

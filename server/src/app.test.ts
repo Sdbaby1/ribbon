@@ -22,6 +22,30 @@ async function signedProfile(displayName: string, issuedAt = NOW) {
 }
 
 describe("profile API", () => {
+  it("proxies read-only Arc RPC calls and rejects transaction submission", async () => {
+    const rpcFetch = async (_input: string | URL | Request, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body)) as { id: number; method: string };
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: "0x13b2" }), {
+        headers: { "content-type": "application/json" },
+      });
+    };
+    const app = createApp({ store: createMemoryStore(), rpcFetch });
+    const allowed = await app.request("/api/rpc", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_chainId", params: [] }),
+    });
+    expect(allowed.status).toBe(200);
+    expect(await allowed.json()).toEqual({ jsonrpc: "2.0", id: 1, result: "0x13b2" });
+
+    const rejected = await app.request("/api/rpc", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "eth_sendRawTransaction", params: ["0x00"] }),
+    });
+    expect(rejected.status).toBe(400);
+  });
+
   it("stores a name only when the wallet signature matches", async () => {
     const app = appFor();
     const body = await signedProfile("Ada Lovelace");

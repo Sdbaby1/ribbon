@@ -14,4 +14,10 @@ for (const hostname of [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODU
   if (hostname) origins.push(`https://${hostname}`);
 }
 
-export default handle(createApp({ store: createSupabaseStore(url, key), origins }));
+export default handle(
+  createApp({
+    store: createSupabaseStore(url, key),
+    origins,
+    rpcUrl: process.env.ARC_RPC_URL?.trim() || process.env.VITE_ARC_RPC_URL?.trim(),
+  }),
+);

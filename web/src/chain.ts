@@ -1,5 +1,5 @@
 import { defineChain } from "viem";
-import { rpcUrl } from "./config";
+import { arcRpcUrl } from "./config";
 
 export const arc = defineChain({
   id: 5042,
@@ -10,7 +10,7 @@ export const arc = defineChain({
     decimals: 18,
   },
   rpcUrls: {
-    default: { http: [rpcUrl] },
+    default: { http: [arcRpcUrl] },
   },
   blockExplorers: {
     default: { name: "Arc Explorer", url: "https://explorer.arc.io" },

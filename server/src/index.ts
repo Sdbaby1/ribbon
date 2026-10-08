@@ -24,7 +24,7 @@ if (store.kind === "memory") {
   console.log("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is unset. Display names stay in memory for this process.");
 }
 
-const app = createApp({ store, origins, staticRoot });
+const app = createApp({ store, origins, staticRoot, rpcUrl: process.env.ARC_RPC_URL?.trim() });
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`Ribbon API on http://localhost:${port} (profile store: ${store.kind})`);
