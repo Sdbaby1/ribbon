@@ -1,4 +1,4 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
@@ -6,6 +6,8 @@ import { createApp } from "./app.js";
 import { createMemoryStore, createSupabaseStore } from "./store.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+// src/ during dev and dist/ in production are both two levels under the repo root.
+dotenv.config({ path: path.resolve(here, "../../.env") });
 const port = Number(process.env.PORT || 8787);
 const origins = (process.env.WEB_ORIGIN || "http://localhost:5173")
   .split(",")

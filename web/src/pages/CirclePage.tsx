@@ -44,6 +44,7 @@ function CircleScreen({ circleId }: { circleId: bigint }) {
   const [status, setStatus] = useState<string | null>(null);
   const [hash, setHash] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [invite, setInvite] = useState<string | null>(() => readInvite(arc.id, circleId));
   const [recoverHash, setRecoverHash] = useState("");
   const [amount, setAmount] = useState("");
@@ -79,7 +80,7 @@ function CircleScreen({ circleId }: { circleId: bigint }) {
     try {
       const txHash = await action();
       setHash(txHash);
-      setStatus("Waiting for Arc. The receipt is final in under a second.");
+      setStatus("Waiting for Arc to confirm the transaction.");
       const receipt = await client.waitForTransactionReceipt({ hash: txHash });
       if (receipt.status !== "success") throw new Error("The transaction reverted.");
       setStatus("Confirmed.");
@@ -168,14 +169,14 @@ function CircleScreen({ circleId }: { circleId: bigint }) {
           <Link to="/">All circles</Link>
           <h1>{data?.name ?? `Circle ${circleId.toString()}`}</h1>
           <p className="fine">
-            #{circleId.toString()} {data?.closed ? "· closed" : ""} {data ? `· ${data.members.length} members` : ""}
+            #{circleId.toString()} {data?.closed ? "| closed" : ""} {data ? `| ${data.members.length} members` : ""}
           </p>
         </div>
       </div>
-      {circle.isError ? <p className="error">{explainError(circle.error)}</p> : null}
-      {error ? <p className="error">{error}</p> : null}
+      {circle.isError ? <p className="error" role="alert">{explainError(circle.error)}</p> : null}
+      {error ? <p className="error" role="alert">{error}</p> : null}
       {status ? (
-        <p className="status">
+        <p className="status" role="status">
           {status} {hash ? <a href={explorerTx(hash)}>View transaction</a> : null}
         </p>
       ) : null}
@@ -190,9 +191,14 @@ function CircleScreen({ circleId }: { circleId: bigint }) {
                 <button
                   className="button ghost"
                   type="button"
-                  onClick={() => void navigator.clipboard.writeText(formatInvite(circleId, invite as `0x${string}`))}
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(formatInvite(circleId, invite as `0x${string}`))
+                      .then(() => setCopied(true))
+                      .catch((caught) => setError(explainError(caught)));
+                  }}
                 >
-                  Copy invite
+                  {copied ? "Copied" : "Copy invite"}
                 </button>
               </div>
             </>
@@ -339,8 +345,8 @@ function CircleScreen({ circleId }: { circleId: bigint }) {
                 </div>
               ))
             : null}
-          {preview ? <p className="status">After everyone confirms: {preview.text}.</p> : null}
-          {formError ? <p className="error">{formError}</p> : null}
+          {preview ? <p className="status" role="status">After everyone confirms: {preview.text}.</p> : null}
+          {formError ? <p className="error" role="alert">{formError}</p> : null}
           <div className="actions">
             <button className="button seal" type="button" disabled={!preview || pending || !onArc || data?.closed} onClick={() => void addExpense()}>
               Record expense
@@ -449,7 +455,7 @@ function CircleScreen({ circleId }: { circleId: bigint }) {
                       {expense.participants.map((participant, index) => (
                         <span key={participant}>
                           {shortenAddress(participant)} {formatUsdc(expense.shares[index] ?? 0n)}
-                          {index < expense.participants.length - 1 ? " · " : ""}
+                          {index < expense.participants.length - 1 ? " | " : ""}
                         </span>
                       ))}
                     </p>

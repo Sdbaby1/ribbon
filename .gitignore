@@ -1,4 +1,5 @@
 node_modules/
+.vercel/
 dist/
 artifacts/
 cache/
@@ -12,3 +13,5 @@ deployments/
 .DS_Store
 web/dist/
 server/dist/
+# Full folder export. The zip contains .env. It stays on disk for Codex and is not pushed.
+export/

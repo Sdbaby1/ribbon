@@ -2,6 +2,8 @@
 
 Shared USDC tabs for a small trusted group, settled in one transaction on [Arc](https://www.arc.io) mainnet.
 
+Live app: https://ribbon-pi.vercel.app
+
 Someone opens a circle and shares one invite. A member records an expense as an equal split or as exact shares. Nothing is owed until every person in that split confirms the same numbers. One `settle` transaction then pulls USDC from each debtor straight to each creditor. The contract never holds the money. A debtor can also `pay` a single creditor without settling the rest of the circle.
 
 ## Why Arc
@@ -23,6 +25,25 @@ Hackathon page: https://dorahacks.io/hackathon/arc-microgrants/detail
 
 The submission needs a public repository, a public builder profile, a short description, and a link to a deployment that is already working on Arc mainnet. A testnet-only deploy is not eligible. Deadline: October 14, 2026 at 23:59 ET.
 
+## This folder
+
+`C:\Users\user\ribbon` is the whole project. Copy the directory, or run `powershell -ExecutionPolicy Bypass -File scripts\export-project.ps1` to write `export\ribbon-full.zip`.
+
+The zip includes `.env`, `deployments\5042.json`, `web\dist`, and `server\dist`. Those paths are gitignored, so `git clone` is not a full copy. `node_modules` is omitted; `npm install` restores it from `package-lock.json`.
+
+Open `AGENTS.md` before changing anything. Read `.env` and use the values already in it. Do not overwrite `.env` with `.env.example`.
+
+## Already on mainnet
+
+Do not deploy again unless you mean to replace this contract.
+
+- Contract: `0x6c1c2d5ff7ffD40C5315A8B803Cd4C5ed0a6e59b`
+- Transaction: `0x98aebf732a035079ae974601918615a08568fb3757ccc2c928e693381ebd1c77`
+- Deployer: `0x90C4bA084d6B2D084b87f61a1d1AC755495c1682`
+- Record: `deployments/5042.json`
+- Explorer: https://explorer.arc.io/address/0x6c1c2d5ff7ffD40C5315A8B803Cd4C5ed0a6e59b
+- App: https://ribbon-pi.vercel.app
+
 ## Stack
 
 - Solidity 0.8.28, Hardhat, ethers v6
@@ -34,13 +55,12 @@ The submission needs a public repository, a public builder profile, a short desc
 
 ```powershell
 cd C:\Users\user\ribbon
-copy .env.example .env
 npm install
 npm test
 npm run build
 ```
 
-Fill `.env` from `.env.example`. The commands below assume that file exists.
+`.env` in this folder is already filled. Keep it. Copy `.env.example` to `.env` only when `.env` is missing.
 
 ### 1. Supabase
 
@@ -75,13 +95,27 @@ npm start
 
 `npm start` serves the API and `web/dist` on port 8787. For development, `npm run dev` runs the API on 8787 and Vite on 5173, with `/api` proxied.
 
-The contract on mainnet: `https://explorer.arc.io/address/<VITE_RIBBON_ADDRESS>`
+The contract on mainnet: https://explorer.arc.io/address/0x6c1c2d5ff7ffD40C5315A8B803Cd4C5ed0a6e59b
 
 ### 3. Publish a public URL
 
 Localhost is not a link a reviewer can open. Host the built app somewhere that serves `web/dist` and `/api`, or run `npm start` on a public host. Set `WEB_ORIGIN` to that site's origin and `VITE_API_URL` only if the API is on a different host. Rebuild after any `VITE_` change.
 
 Connect a browser wallet (MetaMask or Rabby), switch to Arc mainnet, and open a circle. Each member approves the exact USDC they owe, then anyone in the circle can settle.
+
+### Vercel hosting
+
+Deploy from this repository's root. `vercel.json` builds the existing workspaces with `npm run build:vercel`, serves `web/dist`, and routes `/api` requests to `api/index.mjs`. Circle links fall back to the React app. The Vercel build uses the committed ABI and does not deploy a contract.
+
+Set these Production environment variables in the Vercel project:
+
+- `VITE_ARC_RPC_URL` and `VITE_RIBBON_ADDRESS`: use the existing mainnet values from the local `.env`.
+- `SUPABASE_URL`: use the existing project URL.
+- `SUPABASE_SERVICE_ROLE_KEY`: store as a sensitive server-only variable, never with a `VITE_` prefix.
+
+Leave `VITE_API_URL` unset for same-origin API requests. The API allows the deployment and production origins exposed by Vercel; `WEB_ORIGIN` can add other origins. The hosted API requires Supabase so names persist across function invocations. Do not upload the deployer private key: hosting does not need it. `.vercelignore` excludes local credentials, exports, and deployment records from source uploads.
+
+Use Node.js 22.x. After deploying, check `/`, a `/c/1` deep link, `/api/health`, and a profile lookup. Verify the production URL opens without a Vercel login before using it in the submission. Local development and `npm start` continue to use the existing server entry point.
 
 ## Contract
 

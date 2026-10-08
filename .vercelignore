@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+export
+deployments
+node_modules
+artifacts
+cache
+typechain-types
+coverage
+web/dist
+server/dist
+*.log

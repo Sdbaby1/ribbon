@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ui"
+  short_description: "Build and polish clear, responsive interfaces"
+  default_prompt: "Use $ui to improve this interface's design, interactions, and mobile usability."

@@ -14,6 +14,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { switchChain, isPending: switching } = useSwitchChain();
   const { signMessageAsync } = useSignMessage();
   const [displayName, setDisplayName] = useState("");
+  const [profileConsent, setProfileConsent] = useState(false);
   const [nameMessage, setNameMessage] = useState<string | null>(null);
   const connector = connectors[0];
   const onArc = chainId === ARC_CHAIN_ID;
@@ -39,6 +40,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <header className="top">
         <Link className="brand" to="/">
           <span className="mark" aria-hidden="true">
@@ -48,15 +52,15 @@ export function Layout({ children }: { children: ReactNode }) {
           </span>
           <span>
             <strong>Ribbon</strong>
-            <span> USDC tabs on Arc</span>
+            <span> Shared expenses on Arc</span>
           </span>
         </Link>
         <div className="top-actions">
           {isConnected && address ? (
             <div className="wallet">
-              <span className="mono">{shortenAddress(address)}</span>
+              <span className="mono" title={address}>{shortenAddress(address)}</span>
               {onArc ? (
-                <span className="pill">Arc</span>
+                <span className="network-badge">Arc mainnet</span>
               ) : (
                 <button className="button seal" type="button" disabled={switching} onClick={() => switchChain({ chainId: arc.id })}>
                   Switch to Arc
@@ -80,31 +84,44 @@ export function Layout({ children }: { children: ReactNode }) {
       </header>
       {isConnected && address ? (
         <form
-          className="paper"
-          style={{ marginBottom: 16 }}
+          className="paper profile-form"
           onSubmit={(event) => {
             event.preventDefault();
             void onSaveName();
           }}
         >
-          <div className="row">
-            <label style={{ flex: 1, marginTop: 0 }}>
-              Name on this device’s tabs
-              <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={32} />
+          <div className="row profile-row">
+            <label className="profile-name">
+              Public display name
+              <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={32} autoComplete="nickname" />
             </label>
-            <button className="button" type="submit" disabled={displayName.trim().length === 0}>
-              Sign and save
+            <button className="button" type="submit" disabled={displayName.trim().length === 0 || !profileConsent}>
+              Save public name
             </button>
           </div>
-          {nameMessage ? <p className={nameMessage === "Name saved." ? "status" : "error"}>{nameMessage}</p> : null}
+          <p className="form-help">Optional. Your wallet address and name are stored after you sign a message. The signature is verified and is not stored.</p>
+          <label className="consent-row">
+            <input type="checkbox" checked={profileConsent} onChange={(event) => setProfileConsent(event.target.checked)} required />
+            <span>
+              I agree to the <Link to="/terms">Terms</Link> and understand the <Link to="/privacy">Privacy Policy</Link>.
+            </span>
+          </label>
+          {nameMessage ? <p role={nameMessage === "Name saved." ? "status" : "alert"} className={nameMessage === "Name saved." ? "status" : "error"}>{nameMessage}</p> : null}
         </form>
       ) : null}
-      {children}
+      <main id="main-content" tabIndex={-1}>{children}</main>
       <footer>
-        Arc chain 5042. Amounts use the 6-decimal USDC contract at{" "}
-        <a href="https://explorer.arc.io/address/0x3600000000000000000000000000000000000000">0x3600…0000</a>. Gas is the
-        same USDC, shown by wallets at 18 decimals. A circle is a trusted group: balances change only after every person
-        in the split confirms, and USDC moves straight from debtor to creditor.
+        <p>
+          Arc chain 5042. Amounts use the 6-decimal USDC contract at{" "}
+          <a href="https://explorer.arc.io/address/0x3600000000000000000000000000000000000000">0x3600...0000</a>. Gas is the
+          same USDC, shown by wallets at 18 decimals. USDC moves directly from debtor to creditor.
+        </p>
+        <nav aria-label="Legal and project links" className="footer-links">
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+          <Link to="/cookies">Cookies</Link>
+          <a href="https://github.com/Sdbaby1/ribbon">Source code</a>
+        </nav>
       </footer>
     </div>
   );

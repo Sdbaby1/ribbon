@@ -117,34 +117,43 @@ export function HomePage() {
     <>
       <SetupNotice ribbonAddress={ribbonAddress} />
       <section className="hero">
-        <div>
-          <h1>Close the tab.</h1>
+        <div className="hero-copy">
+          <p className="eyebrow">Shared expense ledger on Arc mainnet</p>
+          <h1>Settle shared expenses in USDC.</h1>
           <p className="lede">
-            Ribbon nets who owes whom in a shared USDC circle and settles every balance in one Arc transaction. Gas is
-            already USDC, and the receipt is final in under a second, so a small repayment is a normal action.
+            Create a circle for two to eight people. Record what someone paid, let each participant confirm their share,
+            then settle the net balance directly between wallets on Arc. Ribbon never holds funds.
           </p>
-          <div className="steps">
-            <article className="step">
-              <em>01</em>
-              <p>Open a circle and share one invite.</p>
-            </article>
-            <article className="step">
-              <em>02</em>
-              <p>Log a payment. Everyone in the split confirms the exact shares.</p>
-            </article>
-            <article className="step">
-              <em>03</em>
-              <p>Settle. Debtors pay creditors directly. Ribbon never holds the money.</p>
-            </article>
-          </div>
+          <ol className="steps">
+            <li className="step">
+              <span className="step-index">Step 1</span>
+              <h2>Create the circle</h2>
+              <p>Name the group and share its invite with the people splitting costs.</p>
+            </li>
+            <li className="step">
+              <span className="step-index">Step 2</span>
+              <h2>Confirm each expense</h2>
+              <p>Record a payment. Everyone included in the split confirms the exact shares.</p>
+            </li>
+            <li className="step">
+              <span className="step-index">Step 3</span>
+              <h2>Settle the balance</h2>
+              <p>Debtors pay creditors directly in USDC after the group confirms its expenses.</p>
+            </li>
+          </ol>
         </div>
-        <aside className="paper">
+        <aside className="paper network-note">
+          <p className="eyebrow dark">Built for small trusted groups</p>
           <h2>Why it is on Arc</h2>
           <p>
-            On a chain where gas is a volatile token, settling six dollars costs a ceremony. Arc prices the fee in USDC
-            and finalizes without a reorg. Ribbon stores the book in the contract because Arc’s public RPC refuses log
-            scans longer than 10,000 blocks, about 85 minutes at this block time.
+            Arc uses USDC for gas, so members do not need a second token to repay a small balance. Ribbon reads the ledger
+            from contract storage because Arc's public RPC limits log queries to 10,000 blocks.
           </p>
+          <dl className="facts">
+            <div><dt>Network</dt><dd>Arc mainnet</dd></div>
+            <div><dt>Asset</dt><dd>USDC</dd></div>
+            <div><dt>Custody</dt><dd>Your wallet</dd></div>
+          </dl>
         </aside>
       </section>
 
@@ -157,13 +166,14 @@ export function HomePage() {
           }}
         >
           <h2>Open a circle</h2>
+          <p>Create the shared ledger. Your wallet will ask you to confirm the transaction.</p>
           <label>
             Name
             <input value={name} onChange={(event) => setName(event.target.value)} />
           </label>
           <div className="actions">
-            <button className="button seal" type="submit" disabled={!ready || pending || name.trim().length === 0}>
-              Create on Arc
+            <button className="button seal" type="submit" aria-busy={pending} disabled={!ready || pending || name.trim().length === 0}>
+              {pending ? "Waiting for wallet" : "Create on Arc"}
             </button>
           </div>
         </form>
@@ -175,13 +185,14 @@ export function HomePage() {
           }}
         >
           <h2>Join with an invite</h2>
+          <p>Paste the complete invite from a circle member. Joining is an onchain transaction.</p>
           <label>
             Invite
             <input value={invite} onChange={(event) => setInvite(event.target.value)} spellCheck={false} />
           </label>
           <div className="actions">
-            <button className="button" type="submit" disabled={!ready || pending || invite.trim().length === 0}>
-              Join circle
+            <button className="button" type="submit" aria-busy={pending} disabled={!ready || pending || invite.trim().length === 0}>
+              {pending ? "Waiting for wallet" : "Join circle"}
             </button>
           </div>
         </form>
@@ -203,7 +214,7 @@ export function HomePage() {
           {ids.length === 0 && isConnected && ribbonAddress ? <p>No circles for this wallet yet.</p> : null}
         </section>
       </section>
-      {error ? <p className="error">{error}</p> : null}
+      {error ? <p className="error" role="alert">{error}</p> : null}
       {ready ? null : (
         <p className="fine">
           Sample invite shape: {formatInvite(1n, `0x${"ab".repeat(32)}`)}

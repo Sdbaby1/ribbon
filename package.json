@@ -11,6 +11,7 @@
     "export-abi": "hardhat compile && tsx scripts/export-abi.ts",
     "test": "npm run export-abi && hardhat test && npm run test -w server && npm run test -w web",
     "build": "npm run export-abi && npm run build -w server && npm run build -w web",
+    "build:vercel": "npm run build -w server && npm run build -w web",
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
     "start": "npm run start -w server",
     "deploy:arc": "hardhat run scripts/deploy.ts --network arc",
